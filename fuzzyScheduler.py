@@ -2,8 +2,8 @@ from sys import argv
 from re import *
 
 # read input file
-# file_name = argv[1]
-file_name = "input1.txt"
+file_name = argv[1]
+# file_name = "input1.txt"
 
 # Numeric representation in hours
 days_in_week = {"mon":10, "tue":20, "wed":30, "thu":40, "fri":50}
@@ -22,12 +22,6 @@ hours_of_day = {"9am":0, "10am":1, "11am":2, "12pm":3, "1pm":4, "2pm":5, "3pm":6
     # task_regex = search("task, (?P<name>\S*) (?P<duration>\S*)",line)
     # if task_regex is not None:
     #     tasks.append((task_regex.group("name"),task_regex.group("duration")))
-    
-# # TEST
-# count = 0
-# for line in lines: 
-#     count += 1
-#     print("Line{}: {}".format(count, line.strip())) 
 
 def main():
     lines = read_file_to_lines(file_name)
@@ -48,7 +42,7 @@ def read_file_to_lines(file_name):
 def get_domain_from_lines(lines):
     domain = dict()
     for line in lines:
-        match = search("task, (?P<name>\S*) (?P<duration>\S*)",line)
+        match = search(r"task, (?P<name>\S*) (?P<duration>\S*)",line)
         if match is not None:
             variable_name = match.group("name")
             duration = int(match.group("duration"))
