@@ -216,6 +216,11 @@ def get_soft_deadline_constraints(lines):
             soft_deadline_constraints[t] = (time, cost)
     return soft_deadline_constraints
 
+###### Extended Class : Extended_CSP ######
+class Extended_CSP(CSP):
+    def __init__(self, domains, constraints, soft_constraints):
+        super().__init__(domains, constraints)
+        self.soft_constraints = soft_constraints
 
 ###### Custom Class : Task ######
 class Task:
