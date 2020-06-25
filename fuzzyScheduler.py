@@ -1,5 +1,6 @@
 from sys import argv
 from re import *
+from inspect import *
 from cspProblem import Constraint
 
 # read input file
@@ -27,12 +28,13 @@ hours_of_day = {"9am":9, "10am":10, "11am":11, "12pm":12, "1pm":13, "2pm":14, "3
 def main():
     lines = read_file_to_lines(file_name)
     domain = get_domain_from_lines(lines)
-    # get_hard_constraints_from_lines(lines)
+    tasks = get_tasks_from_domain(domain)
+    get_hard_constraints_from_lines(lines,tasks)
     # print(lines)
-    for d in domain:
-        print(d)
-        for time in domain[d]:
-            print("start-time:\t", time[0].day, "\t", time[0].hour, "\tfinish-time:\t", time[1].day, "\t", time[1].hour)
+    # for d in domain:
+    #     print(d)
+    #     for time in domain[d]:
+    #         print("start-time:\t", time[0].day, "\t", time[0].hour, "\tfinish-time:\t", time[1].day, "\t", time[1].hour)
 
 def read_file_to_lines(file_name):
     with open(file_name) as fp: 
@@ -61,41 +63,71 @@ def get_domain_from_lines(lines):
                         continue
                     if finish_time.hour > hours_of_day["5pm"]:
                         continue
-                    domain[variable_name].append((start_time,finish_time))
+                    domain[variable_name].append((start_time,finish_time)) # domain includes task name and available time slots
     return domain
 
-def get_hard_constraints_from_lines(lines):
-    get_binary_constraints_from_lines(lines)
+def get_tasks_from_domain(domain):
+    tasks = list()
+    for task_name in domain:
+        tasks.append(Task(task_name))
+    return tasks
 
-def get_binary_constraints_from_lines(lines):
+def get_hard_constraints_from_lines(lines,tasks):
+    binary_constraints = get_binary_constraints_from_lines(lines,tasks)
+    #DEBUG:
+    for bc in binary_constraints:
+        print(bc.scope[0].name, bc.scope[1].name, getsource(bc.condition))
+
+def get_binary_constraints_from_lines(lines,tasks):
+    binary_constraints = list()
     for line in lines:
         match = search(r"^constraint, (?P<t1>\S*) (?P<type>\S*) (?P<t2>\S*)",line)
         if match is not None:
-            t1 = match.group("t1")
+            t1 = get_task_by_name(match.group("t1"),tasks)
             binary_constraint_type = match.group("type")
-            t2 = match.group("t2")
+            t2 = get_task_by_name(match.group("t2"),tasks)
 
             if binary_constraint_type == "before":
-                pass
+                scope = (t1, t2)
+                condition = lambda t1, t2: t1.start_time <= t2.start_time
             elif binary_constraint_type == "after":
-                pass
+                scope = (t1, t2)
+                condition = lambda t1, t2: t1.start_time >= t2.start_time
             elif binary_constraint_type == "same-day":
-                pass
+                scope = (t1, t2)
+                condition = lambda t1, t2: t1.start_time.day == t2.start_time.day
             elif binary_constraint_type == "starts-at":
-                pass
+                scope = (t1, t2)
+                condition = lambda t1, t2: t1.start_time.day == t2.start_time.day and t1.start_time.hour == t2.start_time.hour
             else :
                 exit("Invalid binary constraint")
-
-            print(t1,binary_constraint_type,t2)
+            
+            binary_constraints.append(Constraint(scope,condition))
+    return binary_constraints
 
 def get_domain_constraints_from_lines(lines):
     pass
 
+###### Custom Class : Task ######
+class Task:
+    def __init__(self, name, start_time=None, finish_time=None):
+        self.name = name
+        self.start_time = start_time
+        self.finish_time = finish_time
+    
+    def set_time(self, start_time, finish_time):
+        self.start_time = start_time
+        self.finish_time = finish_time
+
+def get_task_by_name(name, tasks):
+    for task in tasks:
+        if name == task.name:
+            return task
+    return None # task not found
+
 ###### Custom Class : Time ######
 class Time:
     # Constants
-    START_HOUR_OF_DAY = 9
-    END_HOUR_OF_DAY = 17
     WORK_HOURS_A_DAY = 8
     FULL_HOURS_A_DAY = 24
     

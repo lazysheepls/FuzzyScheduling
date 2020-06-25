@@ -4,6 +4,7 @@ task, t2 4
 # two binary constraints
 constraint, t1 before t2
 constraint, t1 same-day t2
+constraint, t1 starts-at t2
 # domain constraint
 domain, t2 mon
 # soft deadlines
