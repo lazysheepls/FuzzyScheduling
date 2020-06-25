@@ -74,9 +74,14 @@ def get_tasks_from_domain(domain):
 
 def get_hard_constraints_from_lines(lines,tasks):
     binary_constraints = get_binary_constraints_from_lines(lines,tasks)
+    domain_constaints = get_domain_constraints_from_lines(lines, tasks)
     #DEBUG:
+    print("Binary Constraints:")
     for bc in binary_constraints:
         print(bc.scope[0].name, bc.scope[1].name, getsource(bc.condition))
+    print("Domain Constraints:")
+    for dc in domain_constaints:
+        print(dc.scope[0].name, getsource(dc.condition))
 
 def get_binary_constraints_from_lines(lines,tasks):
     binary_constraints = list()
@@ -105,8 +110,104 @@ def get_binary_constraints_from_lines(lines,tasks):
             binary_constraints.append(Constraint(scope,condition))
     return binary_constraints
 
-def get_domain_constraints_from_lines(lines):
-    pass
+def get_domain_constraints_from_lines(lines,tasks):
+    domain_constraints = list()
+    for line in lines:
+        # domain, <t> <day>
+        t_at_day_match = search(r"domain, (?P<t>\S*) (?P<day>[a-z]{3})(?![a-z])", line)
+
+        # domain, <t> <hour>
+        t_at_hour_match = search(r"domain, (?P<t>\S*) (?P<day>[0-9]+(am|pm))(?![a-z])", line)
+
+        # domain, <t> starts-before/starts-after/ends-before/ends-after <day> <hour>
+        t_range_day_hour_match = search(r"domain, (?P<t>\S*) (?P<type>\S*-\S*) (?P<day>[a-z]+) (?P<hour>[0-9]+(am|pm))(?!-|.*[0-9]+)", line)
+
+        # domain, <t> starts-in/ends-in <day> <hour>-<day> <hour>
+        t_day_hour_to_day_hour_match = search(r"domain, (?P<t>\S*) (?P<type>\S*-\S*) (?P<start_day>[a-z]+) (?P<start_hour>[0-9]+[a-z]+)-(?P<finish_day>[a-z]+) (?P<finish_hour>[0-9]+[a-z]+)", line)
+        
+        # domain, <t> starts-before/ends-before/starts-after/ends-after <hour>
+        t_range_hour_match = search(r"domain, (?P<t>\S*) (?P<type>\S*-\S*) (?P<hour>[0-9]+[a-z]+)", line)
+
+        if t_at_day_match is not None:
+            constraint = get_at_day_constraint(t_at_day_match, tasks)
+        elif t_at_hour_match is not None:
+            constraint = get_at_hour_constraint(t_at_hour_match, tasks)
+        elif t_range_day_hour_match is not None:
+            constraint = get_range_day_hour_constraint(t_range_day_hour_match, tasks)
+        elif t_day_hour_to_day_hour_match is not None:
+            constraint = get_day_hour_to_day_hour_constraint(t_day_hour_to_day_hour_match, tasks)
+        elif t_range_hour_match is not None:
+            constraint = get_range_hour_domain_constraint(t_range_hour_match, tasks)
+        else:
+            continue
+
+        domain_constraints.append(constraint)
+    return domain_constraints
+
+def get_at_day_constraint(match, tasks):
+    t = get_task_by_name(match.group("t"),tasks)
+    scope = (t,)
+    condition = lambda t: t.start_time.day == match.group("day")
+    return Constraint(scope,condition)
+
+def get_at_hour_constraint(match, tasks):
+    t = get_task_by_name(match.group("t"),tasks)
+    scope = (t,)
+    condition = lambda t: t.start_time.hour == match.group("hour")   
+    return Constraint(scope,condition)
+
+def get_range_day_hour_constraint(match,tasks):
+    t = get_task_by_name(match.group("t"),tasks)
+    scope = (t,)
+    constraint_type = match.group("type")
+    required_day = match.group("day")
+    required_hour = match.group("hour")
+    if constraint_type == "starts-before":
+        condition = lambda t: t.start_time.day <= required_day or (t.start_time.day == required_day and t.start_time.hour <= required_hour)
+    elif constraint_type == "starts-after":
+        condition = lambda t: t.start_time.day >= required_day or (t.start_time.day == required_day and t.start_time.hour >= required_hour)
+    elif constraint_type == "ends-before":
+        condition = lambda t: t.finish_time.day <= required_day or (t.finish_time.day == required_day and t.finish_time.hour <= required_hour)
+    elif constraint_type == "ends-after":
+        condition = lambda t: t.finish_time.day >= required_day or (t.finish_time.day == required_day and t.finish_time.hour >= required_hour)
+    else:
+        exit("Invalid hard domain constraint (starts/ends before/after)")
+    return Constraint(scope,condition)
+
+def get_day_hour_to_day_hour_constraint(match, tasks):
+    t = get_task_by_name(match.group("t"),tasks)
+    scope = (t,)
+    constraint_type = match.group("type")
+    required_begin_day = match.group("start_day")
+    required_begin_hour = match.group("start_hour")
+    required_end_day = match.group("finish_day")
+    required_end_hour = match.group("finish_hour")
+    if constraint_type == "starts-in":
+        condition = lambda t: t.start_time.day >= required_begin_day and t.start_time.hour >= required_begin_hour \
+                    and t.start_time.day <= required_end_day and t.start_time.hour <= required_end_hour
+    elif constraint_type == "ends-in":
+        condition = lambda t: t.finish_time.day >= required_begin_day and t.finish_time.hour >= required_begin_hour \
+                    and t.finish_time.day <= required_end_day and t.finish_time.hour <= required_end_hour
+    else:
+        exit("Invalid hard domain constraint (from day-hour to day-hour)")
+    return Constraint(scope,condition)
+
+def get_range_hour_domain_constraint(match, tasks):
+    t = get_task_by_name(match.group("t"), tasks)
+    scope = (t,)
+    constraint_type = match.group("type")
+    required_hour = match.group("hour")
+    if constraint_type == "starts-before":
+        condition = lambda t: t.start_time.hour <= required_hour
+    elif constraint_type == "ends-before":
+        condition = lambda t: t.finish_time.hour <= required_hour
+    elif constraint_type == "starts-after":
+        condition = lambda t: t.start_time.hour >= required_hour
+    elif constraint_type == "ends-after":
+        condition = lambda t: t.finish_time.hour >= required_hour
+    else:
+        exit("Invalid hard domain constraint (starts/ends before/after hour)")
+    return Constraint(scope,condition)
 
 ###### Custom Class : Task ######
 class Task:

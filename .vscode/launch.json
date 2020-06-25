@@ -9,7 +9,7 @@
             "type": "python",
             "request": "launch",
             "program": "./fuzzyScheduler.py",
-            "args": ["input1.txt"],
+            "args": ["all_possible_inputs.txt"],
             "console": "integratedTerminal"
         }
     ]

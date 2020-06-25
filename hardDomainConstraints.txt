@@ -1,0 +1,17 @@
+-all of the hard domain constrains-
+
+domain, t1 wed
+domain, t2 9am 
+
+domain, t1 starts-before tue 12pm
+domain, t2 starts-after thu 3pm 
+domain, t1 ends-before fri 1pm 
+domain, t2 ends-after mon 10am
+
+domain, t1 starts-in tue 3pm-thu 9am 
+domain, t2 ends-in fri 10am-fri 4pm
+
+domain, t2 starts-before 11am   
+domain, t1 ends-before 12am 
+domain, t1 starts-after 1pm 
+domain, t2 ends-after 3pm
