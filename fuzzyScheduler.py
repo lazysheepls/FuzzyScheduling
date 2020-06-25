@@ -7,8 +7,8 @@ file_name = argv[1]
 # file_name = "input1.txt"
 
 # Numeric representation in hours
-days_in_week = {"mon":10, "tue":20, "wed":30, "thu":40, "fri":50}
-hours_of_day = {"9am":0, "10am":1, "11am":2, "12pm":3, "1pm":4, "2pm":5, "3pm":6, "4pm":7, "5pm":8}
+days_in_week = {"mon":1, "tue":2, "wed":3, "thu":4, "fri":5}
+hours_of_day = {"9am":9, "10am":10, "11am":11, "12pm":12, "1pm":13, "2pm":14, "3pm":15, "4pm":16, "5pm":17}
 
 # process inputs
 # for line in lines:
@@ -27,11 +27,12 @@ hours_of_day = {"9am":0, "10am":1, "11am":2, "12pm":3, "1pm":4, "2pm":5, "3pm":6
 def main():
     lines = read_file_to_lines(file_name)
     domain = get_domain_from_lines(lines)
-    get_hard_constraints_from_lines(lines)
+    # get_hard_constraints_from_lines(lines)
     # print(lines)
-    # print(domain)
-    # for d in domain:
-    #     print(d)
+    for d in domain:
+        print(d)
+        for time in domain[d]:
+            print("start-time:\t", time[0].day, "\t", time[0].hour, "\tfinish-time:\t", time[1].day, "\t", time[1].hour)
 
 def read_file_to_lines(file_name):
     with open(file_name) as fp: 
@@ -53,13 +54,12 @@ def get_domain_from_lines(lines):
             # get domain for each variable
             for day in days_in_week.values():
                 for hour in hours_of_day.values():
-                    # TODO: create a class to save and compare time
-                    start_time = day + hour #TODO: replce by the time class
-                    finish_time = start_time + duration #TODO: replace by the time class
                     start_time = Time(day,hour)
-
-                    # Remove the time if the task could not finish in one day
-                    if finish_time > day + list(hours_of_day.values())[-1]:
+                    finish_time = Time(start_time,duration)
+                    #do not add to domain if task cannot finish on same day
+                    if start_time.day != finish_time.day:
+                        continue
+                    if finish_time.hour > hours_of_day["5pm"]:
                         continue
                     domain[variable_name].append((start_time,finish_time))
     return domain
@@ -93,10 +93,24 @@ def get_domain_constraints_from_lines(lines):
 
 ###### Custom Class : Time ######
 class Time:
-    def __init__(self, day, hour):
-        self.time = (day, hour)
-        #TODO: finishe the time add, and time compare
-
+    # Constants
+    START_HOUR_OF_DAY = 9
+    END_HOUR_OF_DAY = 17
+    WORK_HOURS_A_DAY = 8
+    FULL_HOURS_A_DAY = 24
+    
+    # Constructor
+    def __init__(self, arg1, arg2):
+        if isinstance(arg1, int) and isinstance(arg2, int): # day and hour
+            self.day = arg1
+            self.hour = arg2
+        elif isinstance(arg1, Time) and isinstance(arg2, int): # time and duration
+            start_time = arg1
+            duration = arg2
+            extra_number_of_days = duration // self.WORK_HOURS_A_DAY
+            extra_hours = duration % self.WORK_HOURS_A_DAY
+            self.day = start_time.day + extra_number_of_days
+            self.hour = start_time.hour + extra_hours
 
 if __name__ == '__main__':
     main()         
