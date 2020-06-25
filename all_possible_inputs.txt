@@ -27,4 +27,4 @@ domain, t2 ends-after 3pm
 
 # soft deadlines
 domain, t1 ends-by mon 3pm 10
-domain, t2 ends-by mon 3pm 10
+domain, t2 ends-by thu 12pm 100 

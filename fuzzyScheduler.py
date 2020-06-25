@@ -29,12 +29,15 @@ def main():
     lines = read_file_to_lines(file_name)
     domain = get_domain_from_lines(lines)
     tasks = get_tasks_from_domain(domain)
-    get_hard_constraints_from_lines(lines,tasks)
+    hard_constraints = get_hard_constraints_from_lines(lines,tasks)
+    soft_deadline_constrains = get_soft_deadline_constraints(lines)
     # print(lines)
     # for d in domain:
     #     print(d)
     #     for time in domain[d]:
     #         print("start-time:\t", time[0].day, "\t", time[0].hour, "\tfinish-time:\t", time[1].day, "\t", time[1].hour)
+    for task in soft_deadline_constrains:
+        print(task, soft_deadline_constrains[task][0], soft_deadline_constrains[task][1])
 
 def read_file_to_lines(file_name):
     with open(file_name) as fp: 
@@ -75,6 +78,7 @@ def get_tasks_from_domain(domain):
 def get_hard_constraints_from_lines(lines,tasks):
     binary_constraints = get_binary_constraints_from_lines(lines,tasks)
     domain_constaints = get_domain_constraints_from_lines(lines, tasks)
+    hard_domain_constrains = binary_constraints + domain_constaints  
     #DEBUG:
     print("Binary Constraints:")
     for bc in binary_constraints:
@@ -82,6 +86,8 @@ def get_hard_constraints_from_lines(lines,tasks):
     print("Domain Constraints:")
     for dc in domain_constaints:
         print(dc.scope[0].name, getsource(dc.condition))
+    
+    return hard_domain_constrains
 
 def get_binary_constraints_from_lines(lines,tasks):
     binary_constraints = list()
@@ -209,6 +215,20 @@ def get_range_hour_domain_constraint(match, tasks):
         exit("Invalid hard domain constraint (starts/ends before/after hour)")
     return Constraint(scope,condition)
 
+def get_soft_deadline_constraints(lines):
+    soft_deadline_constraints = dict()
+    for line in lines:
+        match = search(r"domain, (?P<t>\S*) ends-by (?P<day>[a-z]+) (?P<hour>[0-9]+(am|pm)) (?P<cost>[0-9]+)", line)
+        if match is not None:
+            t = match.group("t")
+            day = days_in_week[match.group("day")]
+            hour = hours_of_day[match.group("hour")]
+            time = Time(day,hour)
+            cost = match.group("cost")
+            soft_deadline_constraints[t] = (time, cost)
+    return soft_deadline_constraints
+
+
 ###### Custom Class : Task ######
 class Task:
     def __init__(self, name, start_time=None, finish_time=None):
@@ -244,6 +264,9 @@ class Time:
             extra_hours = duration % self.WORK_HOURS_A_DAY
             self.day = start_time.day + extra_number_of_days
             self.hour = start_time.hour + extra_hours
+    
+    def __repr__(self):
+        return str(self.day) + "\t" + str(self.hour)
 
 if __name__ == '__main__':
     main()         
