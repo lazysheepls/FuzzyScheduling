@@ -1,7 +1,9 @@
 from sys import argv
 from re import *
 from inspect import *
+# AIPython
 from cspProblem import Constraint
+from cspProblem import CSP
 
 # read input file
 file_name = argv[1]
@@ -10,20 +12,6 @@ file_name = argv[1]
 # Numeric representation in hours
 days_in_week = {"mon":1, "tue":2, "wed":3, "thu":4, "fri":5}
 hours_of_day = {"9am":9, "10am":10, "11am":11, "12pm":12, "1pm":13, "2pm":14, "3pm":15, "4pm":16, "5pm":17}
-
-# process inputs
-# for line in lines:
-    ## constraints
-    # Unary constraints
-    # Binary constraints
-    # Hard domain constraints
-
-    # Soft deadline constraints
-    # Tasks : task, ⟨name⟩ ⟨duration⟩ - tuple
-    # tasks = list()
-    # task_regex = search("task, (?P<name>\S*) (?P<duration>\S*)",line)
-    # if task_regex is not None:
-    #     tasks.append((task_regex.group("name"),task_regex.group("duration")))
 
 def main():
     lines = read_file_to_lines(file_name)
