@@ -22,10 +22,14 @@ def main():
     hard_constraints = get_hard_constraints_from_lines(lines,tasks)
     soft_deadline_constrains = get_soft_deadline_constraints(lines)
     # print(lines)
+    
+    # print("Domains:")
     # for d in domain:
     #     print(d)
     #     for time in domain[d]:
     #         print("start-time:\t", time[0].day, "\t", time[0].hour, "\tfinish-time:\t", time[1].day, "\t", time[1].hour)
+
+    print("Soft constraints:")
     for task in soft_deadline_constrains:
         print(task, soft_deadline_constrains[task][0], soft_deadline_constrains[task][1])
 
@@ -224,11 +228,17 @@ class Extended_CSP(CSP):
         super().__init__(domains, constraints)
         self.soft_constraints = soft_constraints
 
-###### Extended Class : 
+###### Extended Class : Extended_AC_
+class Extended_Search_With_AC_from_CSP(Search_with_AC_from_CSP):
+    def __init__(self, csp):
+        super().__init__(csp)
+        self.soft_constraints = csp.soft_constraints
+        #TODO:
+        # self.cost = csp.cost
 
-###### Extended Class : Extended_GreedySearch ######
+###### Extended Class : Extended_Greedy_Search ######
 # Modified from AstarSearcher from searchGeneric.py
-class Extended_GreedySearch(Searcher):
+class Extended_Greedy_Search(Searcher):
     def __init__(self, problem):
         super().__init__(problem)
 
