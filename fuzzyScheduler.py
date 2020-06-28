@@ -4,6 +4,8 @@ from inspect import *
 # AIPython
 from cspProblem import Constraint
 from cspProblem import CSP
+from searchGeneric import Searcher
+from cspConsistency import Search_with_AC_from_CSP
 
 # read input file
 file_name = argv[1]
@@ -221,6 +223,25 @@ class Extended_CSP(CSP):
     def __init__(self, domains, constraints, soft_constraints):
         super().__init__(domains, constraints)
         self.soft_constraints = soft_constraints
+
+###### Extended Class : 
+
+###### Extended Class : Extended_GreedySearch ######
+# Modified from AstarSearcher from searchGeneric.py
+class Extended_GreedySearch(Searcher):
+    def __init__(self, problem):
+        super().__init__(problem)
+
+    def initialize_frontier(self):
+        self.frontier = FrontierPQ()
+
+    def empty_frontier(self):
+        return self.frontier.empty()
+
+    def add_to_frontier(self,path):
+        """add path to the frontier with the appropriate cost"""
+        value = self.problem.heuristic(path.end())
+        self.frontier.add(path, value)
 
 ###### Custom Class : Task ######
 class Task:
