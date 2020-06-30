@@ -30,7 +30,18 @@ def main():
     csp = Extended_CSP(domains,hard_constraints,soft_constraints)
     problem = Extended_Search_With_AC_from_CSP(csp)
     searcher = GreedySearcher(problem)
-    result = searcher.search()
+    result = searcher.search().end()
+
+    # print result
+    if result is not None:
+        for task_name in result:
+            day_name = list(days_in_week.keys())[list(days_in_week.values()).index(list(result[task_name])[0].start_time.day)]
+            hour_name = list(hours_of_day.keys())[list(hours_of_day.values()).index(list(result[task_name])[0].start_time.hour)]
+            print(task_name + ":" + day_name + " " + hour_name)
+        print("cost:" + str(problem.heuristic(result)))
+    else:
+        print("No solution")
+
 
     # print("==> searcher <==")
     # print(result)
