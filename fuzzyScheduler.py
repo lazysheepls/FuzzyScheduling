@@ -108,13 +108,13 @@ def get_binary_constraints_from_lines(lines):
 
             if binary_constraint_type == "before":
                 scope = (t1, t2)
-                condition = lambda t1, t2: t1.start_time <= t2.start_time
+                condition = lambda t1, t2: t1.finish_time <= t2.start_time
             elif binary_constraint_type == "after":
                 scope = (t1, t2)
-                condition = lambda t1, t2: t1.start_time >= t2.start_time
+                condition = lambda t1, t2: t1.start_time >= t2.finish_time
             elif binary_constraint_type == "same-day":
                 scope = (t1, t2)
-                condition = lambda t1, t2: t1.start_time.day == t2.start_time.day
+                condition = lambda t1, t2:t1.start_time.day == t2.start_time.day
             elif binary_constraint_type == "starts-at":
                 scope = (t1, t2)
                 condition = lambda t1, t2: t1.start_time.day == t2.start_time.day and t1.start_time.hour == t2.start_time.hour
@@ -161,13 +161,13 @@ def get_domain_constraints_from_lines(lines):
 def get_at_day_constraint(match):
     t = match.group("t")
     scope = (t,)
-    condition = lambda t: t.start_time.day == match.group("day")
+    condition = lambda t: t.start_time.day == days_in_week[match.group("day")]
     return Constraint(scope,condition)
 
 def get_at_hour_constraint(match):
     t = match.group("t")
     scope = (t,)
-    condition = lambda t: t.start_time.hour == match.group("hour")   
+    condition = lambda t: t.start_time.hour == hours_of_day[match.group("hour")]
     return Constraint(scope,condition)
 
 def get_range_day_hour_constraint(match):
