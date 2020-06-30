@@ -8,8 +8,9 @@
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
+            // "program": "./test.py",
             "program": "./fuzzyScheduler.py",
-            "args": ["all_possible_inputs.txt"],
+            "args": ["input1.txt"],
             "console": "integratedTerminal"
         }
     ]

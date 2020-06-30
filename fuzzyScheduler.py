@@ -2,9 +2,8 @@ from sys import argv
 from re import *
 from inspect import *
 # AIPython
-from cspProblem import Constraint
-from cspProblem import CSP
-from searchGeneric import Searcher
+from cspProblem import CSP, Constraint
+from searchGeneric import Searcher, FrontierPQ
 from cspConsistency import Search_with_AC_from_CSP
 
 # read input file
@@ -12,20 +11,35 @@ file_name = argv[1]
 # file_name = "input1.txt"
 
 # Numeric representation in hours
-days_in_week = {"mon":1, "tue":2, "wed":3, "thu":4, "fri":5}
-hours_of_day = {"9am":9, "10am":10, "11am":11, "12pm":12, "1pm":13, "2pm":14, "3pm":15, "4pm":16, "5pm":17}
+#DEBUG: use this after finish
+# days_in_week = {"mon":1, "tue":2, "wed":3, "thu":4, "fri":5}
+# hours_of_day = {"9am":9, "10am":10, "11am":11, "12pm":12, "1pm":13, "2pm":14, "3pm":15, "4pm":16, "5pm":17}
+#DEBUG: The following is just for testing, use above values when it's done
+days_in_week = {'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5}
+hours_of_day = {'9am': 1, '10am': 2, '11am':3, '12pm': 4, '1pm': 5, '2pm': 6, '3pm': 7, '4pm': 8, '5pm':9}
+    
 
 def main():
     # process input
     lines = read_file_to_lines(file_name)
     domains = get_domains_from_lines(lines)
-    tasks = get_tasks_from_domain(domains)
-    hard_constraints = get_hard_constraints_from_lines(lines,tasks)
+    hard_constraints = get_hard_constraints_from_lines(lines)
     soft_constraints = get_soft_constraints(lines)
 
     # create SCP
     csp = Extended_CSP(domains,hard_constraints,soft_constraints)
+    problem = Extended_Search_With_AC_from_CSP(csp)
+    searcher = GreedySearcher(problem)
+    result = searcher.search()
 
+    # print("==> searcher <==")
+    # print(result)
+    # print("==> CSP: variables <==")
+    # print(csp.variables)
+    # print("==> CSP: domains <==")
+    # print(csp.domains)
+    # print("==> CSP: constraints <==")
+    # print(csp.constraints)
 
     # print(lines)
     
@@ -36,8 +50,8 @@ def main():
     #         print("start-time:\t", time[0].day, "\t", time[0].hour, "\tfinish-time:\t", time[1].day, "\t", time[1].hour)
 
     print("Soft constraints:")
-    for task in soft_deadline_constrains:
-        print(task, soft_deadline_constrains[task][0], soft_deadline_constrains[task][1])
+    for task in soft_constraints:
+        print(task, soft_constraints[task][0], soft_constraints[task][1])
 
 def read_file_to_lines(file_name):
     with open(file_name) as fp: 
@@ -66,37 +80,31 @@ def get_domains_from_lines(lines):
                         continue
                     if finish_time.hour > hours_of_day["5pm"]:
                         continue
-                    domain[variable_name].append((start_time,finish_time)) # domain includes task name and available time slots
+                    domain[variable_name].append(Task(start_time,finish_time)) # domain includes task name and available time slots
     return domain
 
-def get_tasks_from_domain(domain):
-    tasks = list()
-    for task_name in domain:
-        tasks.append(Task(task_name))
-    return tasks
-
-def get_hard_constraints_from_lines(lines,tasks):
-    binary_constraints = get_binary_constraints_from_lines(lines,tasks)
-    domain_constaints = get_domain_constraints_from_lines(lines, tasks)
+def get_hard_constraints_from_lines(lines):
+    binary_constraints = get_binary_constraints_from_lines(lines)
+    domain_constaints = get_domain_constraints_from_lines(lines)
     hard_domain_constrains = binary_constraints + domain_constaints  
     #DEBUG:
     print("Binary Constraints:")
     for bc in binary_constraints:
-        print(bc.scope[0].name, bc.scope[1].name, getsource(bc.condition))
+        print(bc.scope[0], bc.scope[1], getsource(bc.condition))
     print("Domain Constraints:")
     for dc in domain_constaints:
-        print(dc.scope[0].name, getsource(dc.condition))
+        print(dc.scope[0], getsource(dc.condition))
     
     return hard_domain_constrains
 
-def get_binary_constraints_from_lines(lines,tasks):
+def get_binary_constraints_from_lines(lines):
     binary_constraints = list()
     for line in lines:
         match = search(r"^constraint, (?P<t1>\S*) (?P<type>\S*) (?P<t2>\S*)",line)
         if match is not None:
-            t1 = get_task_by_name(match.group("t1"),tasks)
+            t1 = match.group("t1")
             binary_constraint_type = match.group("type")
-            t2 = get_task_by_name(match.group("t2"),tasks)
+            t2 = match.group("t2")
 
             if binary_constraint_type == "before":
                 scope = (t1, t2)
@@ -116,7 +124,7 @@ def get_binary_constraints_from_lines(lines,tasks):
             binary_constraints.append(Constraint(scope,condition))
     return binary_constraints
 
-def get_domain_constraints_from_lines(lines,tasks):
+def get_domain_constraints_from_lines(lines):
     domain_constraints = list()
     for line in lines:
         # domain, <t> <day>
@@ -135,35 +143,35 @@ def get_domain_constraints_from_lines(lines,tasks):
         t_range_hour_match = search(r"domain, (?P<t>\S*) (?P<type>\S*-\S*) (?P<hour>[0-9]+[a-z]+)", line)
 
         if t_at_day_match is not None:
-            constraint = get_at_day_constraint(t_at_day_match, tasks)
+            constraint = get_at_day_constraint(t_at_day_match)
         elif t_at_hour_match is not None:
-            constraint = get_at_hour_constraint(t_at_hour_match, tasks)
+            constraint = get_at_hour_constraint(t_at_hour_match)
         elif t_range_day_hour_match is not None:
-            constraint = get_range_day_hour_constraint(t_range_day_hour_match, tasks)
+            constraint = get_range_day_hour_constraint(t_range_day_hour_match)
         elif t_day_hour_to_day_hour_match is not None:
-            constraint = get_day_hour_to_day_hour_constraint(t_day_hour_to_day_hour_match, tasks)
+            constraint = get_day_hour_to_day_hour_constraint(t_day_hour_to_day_hour_match)
         elif t_range_hour_match is not None:
-            constraint = get_range_hour_domain_constraint(t_range_hour_match, tasks)
+            constraint = get_range_hour_domain_constraint(t_range_hour_match)
         else:
             continue
 
         domain_constraints.append(constraint)
     return domain_constraints
 
-def get_at_day_constraint(match, tasks):
-    t = get_task_by_name(match.group("t"),tasks)
+def get_at_day_constraint(match):
+    t = match.group("t")
     scope = (t,)
     condition = lambda t: t.start_time.day == match.group("day")
     return Constraint(scope,condition)
 
-def get_at_hour_constraint(match, tasks):
-    t = get_task_by_name(match.group("t"),tasks)
+def get_at_hour_constraint(match):
+    t = match.group("t")
     scope = (t,)
     condition = lambda t: t.start_time.hour == match.group("hour")   
     return Constraint(scope,condition)
 
-def get_range_day_hour_constraint(match,tasks):
-    t = get_task_by_name(match.group("t"),tasks)
+def get_range_day_hour_constraint(match):
+    t = match.group("t")
     scope = (t,)
     constraint_type = match.group("type")
     required_day = match.group("day")
@@ -180,8 +188,8 @@ def get_range_day_hour_constraint(match,tasks):
         exit("Invalid hard domain constraint (starts/ends before/after)")
     return Constraint(scope,condition)
 
-def get_day_hour_to_day_hour_constraint(match, tasks):
-    t = get_task_by_name(match.group("t"),tasks)
+def get_day_hour_to_day_hour_constraint(match):
+    t = match.group("t")
     scope = (t,)
     constraint_type = match.group("type")
     required_begin_day = match.group("start_day")
@@ -198,8 +206,8 @@ def get_day_hour_to_day_hour_constraint(match, tasks):
         exit("Invalid hard domain constraint (from day-hour to day-hour)")
     return Constraint(scope,condition)
 
-def get_range_hour_domain_constraint(match, tasks):
-    t = get_task_by_name(match.group("t"), tasks)
+def get_range_hour_domain_constraint(match):
+    t = match.group("t")
     scope = (t,)
     constraint_type = match.group("type")
     required_hour = match.group("hour")
@@ -224,7 +232,7 @@ def get_soft_constraints(lines):
             day = days_in_week[match.group("day")]
             hour = hours_of_day[match.group("hour")]
             time = Time(day,hour)
-            cost = match.group("cost")
+            cost = int(match.group("cost"))
             soft_constraints[t] = (time, cost)
     return soft_constraints
 
@@ -239,9 +247,12 @@ class Extended_Search_With_AC_from_CSP(Search_with_AC_from_CSP):
     def __init__(self, csp):
         super().__init__(csp)
         self.soft_constraints = csp.soft_constraints
-    #TODO: heuristics
+    
     def heuristic(self, n):
-        pass
+        #DEBUG:
+        print("==> Node N <==")
+        print(n)
+
 
 ###### Extended Class : GreedySearcher ######
 # Modified from AstarSearcher from searchGeneric.py
@@ -261,21 +272,13 @@ class GreedySearcher(Searcher):
         self.frontier.add(path, value)
 
 ###### Custom Class : Task ######
-class Task:
-    def __init__(self, name, start_time=None, finish_time=None):
-        self.name = name
+class Task: 
+    def __init__(self, start_time, finish_time):
         self.start_time = start_time
         self.finish_time = finish_time
     
-    def set_time(self, start_time, finish_time):
-        self.start_time = start_time
-        self.finish_time = finish_time
-
-def get_task_by_name(name, tasks):
-    for task in tasks:
-        if name == task.name:
-            return task
-    return None # task not found
+    def __repr__(self):
+        return "(" + str(self.start_time) + ", " + str(self.finish_time) + ")"
 
 ###### Custom Class : Time ######
 class Time:
@@ -297,7 +300,19 @@ class Time:
             self.hour = start_time.hour + extra_hours
     
     def __repr__(self):
-        return str(self.day) + "\t" + str(self.hour)
+        return str(self.day) + str(self.hour)
+    
+    def __gt__(self, other):
+        return self.day > other.day or (self.day == other.day and self.hour > other.hour)
+    
+    def __ge__(self, other):
+        return self.day >= other.day or (self.day == other.day and self.hour >= other.hour)
+    
+    def __lt__(self, other):
+        return self.day < other.day or (self.day == other.day and self.hour < other.hour)
+    
+    def __le__(self, other):
+        return self.day <= other.day or (self.day == other.day and self.hour <= other.hour)
 
 if __name__ == '__main__':
     main()         
