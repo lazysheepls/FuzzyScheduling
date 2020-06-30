@@ -248,11 +248,35 @@ class Extended_Search_With_AC_from_CSP(Search_with_AC_from_CSP):
         super().__init__(csp)
         self.soft_constraints = csp.soft_constraints
     
-    def heuristic(self, n):
+    def heuristic(self, tasks):
         #DEBUG:
         print("==> Node N <==")
-        print(n)
-
+        print(tasks)
+        # sample format of n
+        # {'t1': {(14, 17), (16, 19), (11, 14)}, 't2': {(13, 17), (15, 19), (11, 15), (14, 18), (12, 16)}}
+        cost_for_all_tasks = 0
+        for task_name in tasks.keys():
+            if task_name not in self.soft_constraints:
+                continue
+            expected_end_time = self.soft_constraints[task_name][0]
+            cost_per_hour = self.soft_constraints[task_name][1]
+            cost_of_a_task = 0
+            
+            task_possible_costs = list()
+            for task_possible_time in tasks[task_name]:
+                if task_possible_time.finish_time > expected_end_time:
+                    delayed_days = task_possible_time.finish_time.day - expected_end_time.day
+                    delayed_hours = task_possible_time.finish_time.hour - expected_end_time.hour
+                    total_delayed_hours = delayed_days * Time.FULL_HOURS_A_DAY + delayed_hours
+                    task_possible_costs.append(total_delayed_hours * cost_per_hour)
+                else:
+                    task_possible_costs.append(0) # not delayed, no cost
+            
+            # Get min cost of a task and add to total costs
+            if task_possible_costs:
+                cost_for_all_tasks += min(task_possible_costs)
+        
+        return cost_for_all_tasks
 
 ###### Extended Class : GreedySearcher ######
 # Modified from AstarSearcher from searchGeneric.py
