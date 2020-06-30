@@ -16,11 +16,17 @@ days_in_week = {"mon":1, "tue":2, "wed":3, "thu":4, "fri":5}
 hours_of_day = {"9am":9, "10am":10, "11am":11, "12pm":12, "1pm":13, "2pm":14, "3pm":15, "4pm":16, "5pm":17}
 
 def main():
+    # process input
     lines = read_file_to_lines(file_name)
-    domain = get_domain_from_lines(lines)
-    tasks = get_tasks_from_domain(domain)
+    domains = get_domains_from_lines(lines)
+    tasks = get_tasks_from_domain(domains)
     hard_constraints = get_hard_constraints_from_lines(lines,tasks)
-    soft_deadline_constrains = get_soft_deadline_constraints(lines)
+    soft_constraints = get_soft_constraints(lines)
+
+    # create SCP
+    csp = Extended_CSP(domains,hard_constraints,soft_constraints)
+
+
     # print(lines)
     
     # print("Domains:")
@@ -41,7 +47,7 @@ def read_file_to_lines(file_name):
                 lines.remove(line) # Remove comment
     return lines
 
-def get_domain_from_lines(lines):
+def get_domains_from_lines(lines):
     domain = dict()
     for line in lines:
         match = search(r"task, (?P<name>\S*) (?P<duration>\S*)",line)
@@ -209,8 +215,8 @@ def get_range_hour_domain_constraint(match, tasks):
         exit("Invalid hard domain constraint (starts/ends before/after hour)")
     return Constraint(scope,condition)
 
-def get_soft_deadline_constraints(lines):
-    soft_deadline_constraints = dict()
+def get_soft_constraints(lines):
+    soft_constraints = dict()
     for line in lines:
         match = search(r"domain, (?P<t>\S*) ends-by (?P<day>[a-z]+) (?P<hour>[0-9]+(am|pm)) (?P<cost>[0-9]+)", line)
         if match is not None:
@@ -219,8 +225,8 @@ def get_soft_deadline_constraints(lines):
             hour = hours_of_day[match.group("hour")]
             time = Time(day,hour)
             cost = match.group("cost")
-            soft_deadline_constraints[t] = (time, cost)
-    return soft_deadline_constraints
+            soft_constraints[t] = (time, cost)
+    return soft_constraints
 
 ###### Extended Class : Extended_CSP ######
 class Extended_CSP(CSP):
@@ -233,12 +239,13 @@ class Extended_Search_With_AC_from_CSP(Search_with_AC_from_CSP):
     def __init__(self, csp):
         super().__init__(csp)
         self.soft_constraints = csp.soft_constraints
-        #TODO:
-        # self.cost = csp.cost
+    #TODO: heuristics
+    def heuristic(self, n):
+        pass
 
-###### Extended Class : Extended_Greedy_Search ######
+###### Extended Class : GreedySearcher ######
 # Modified from AstarSearcher from searchGeneric.py
-class Extended_Greedy_Search(Searcher):
+class GreedySearcher(Searcher):
     def __init__(self, problem):
         super().__init__(problem)
 
