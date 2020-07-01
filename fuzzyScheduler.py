@@ -30,10 +30,11 @@ def main():
     csp = Extended_CSP(domains,hard_constraints,soft_constraints)
     problem = Extended_Search_With_AC_from_CSP(csp)
     searcher = GreedySearcher(problem)
-    result = searcher.search().end()
+    search_process = searcher.search()
 
     # print result
-    if result is not None:
+    if search_process is not None:
+        result = search_process.end()
         for task_name in result:
             day_name = list(days_in_week.keys())[list(days_in_week.values()).index(list(result[task_name])[0].start_time.day)]
             hour_name = list(hours_of_day.keys())[list(hours_of_day.values()).index(list(result[task_name])[0].start_time.hour)]

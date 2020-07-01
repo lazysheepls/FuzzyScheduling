@@ -10,7 +10,7 @@
             "request": "launch",
             // "program": "./test.py",
             "program": "./fuzzyScheduler.py",
-            "args": ["input2.txt"],
+            "args": ["input4.txt"],
             "console": "integratedTerminal"
         }
     ]
