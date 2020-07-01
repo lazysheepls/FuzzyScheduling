@@ -12,11 +12,11 @@ file_name = argv[1]
 
 # Numeric representation in hours
 #DEBUG: use this after finish
-# days_in_week = {"mon":1, "tue":2, "wed":3, "thu":4, "fri":5}
-# hours_of_day = {"9am":9, "10am":10, "11am":11, "12pm":12, "1pm":13, "2pm":14, "3pm":15, "4pm":16, "5pm":17}
+days_in_week = {"mon":1, "tue":2, "wed":3, "thu":4, "fri":5}
+hours_of_day = {"9am":9, "10am":10, "11am":11, "12pm":12, "1pm":13, "2pm":14, "3pm":15, "4pm":16, "5pm":17}
 #DEBUG: The following is just for testing, use above values when it's done
-days_in_week = {'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5}
-hours_of_day = {'9am': 1, '10am': 2, '11am':3, '12pm': 4, '1pm': 5, '2pm': 6, '3pm': 7, '4pm': 8, '5pm':9}
+# days_in_week = {'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5}
+# hours_of_day = {'9am': 1, '10am': 2, '11am':3, '12pm': 4, '1pm': 5, '2pm': 6, '3pm': 7, '4pm': 8, '5pm':9}
     
 
 def main():
@@ -128,7 +128,7 @@ def get_binary_constraints_from_lines(lines):
                 condition = lambda t1, t2:t1.start_time.day == t2.start_time.day
             elif binary_constraint_type == "starts-at":
                 scope = (t1, t2)
-                condition = lambda t1, t2: t1.start_time.day == t2.start_time.day and t1.start_time.hour == t2.start_time.hour
+                condition = lambda t1, t2: t1.start_time.day == t2.finish_time.day and t1.start_time.hour == t2.finish_time.hour
             else :
                 exit("Invalid binary constraint")
             
@@ -142,7 +142,7 @@ def get_domain_constraints_from_lines(lines):
         t_at_day_match = search(r"domain, (?P<t>\S*) (?P<day>[a-z]{3})(?![a-z])", line)
 
         # domain, <t> <hour>
-        t_at_hour_match = search(r"domain, (?P<t>\S*) (?P<day>[0-9]+(am|pm))(?![a-z])", line)
+        t_at_hour_match = search(r"domain, (?P<t>\S*) (?P<hour>[0-9]+(am|pm))(?![a-z])", line)
 
         # domain, <t> starts-before/starts-after/ends-before/ends-after <day> <hour>
         t_range_day_hour_match = search(r"domain, (?P<t>\S*) (?P<type>\S*-\S*) (?P<day>[a-z]+) (?P<hour>[0-9]+(am|pm))(?!-|.*[0-9]+)", line)
@@ -185,16 +185,17 @@ def get_range_day_hour_constraint(match):
     t = match.group("t")
     scope = (t,)
     constraint_type = match.group("type")
-    required_day = match.group("day")
-    required_hour = match.group("hour")
+    required_day = days_in_week[match.group("day")]
+    required_hour = hours_of_day[match.group("hour")]
+    required_time = Time(required_day,required_hour)
     if constraint_type == "starts-before":
-        condition = lambda t: t.start_time.day <= required_day or (t.start_time.day == required_day and t.start_time.hour <= required_hour)
+        condition = lambda t: t.start_time <= required_time
     elif constraint_type == "starts-after":
-        condition = lambda t: t.start_time.day >= required_day or (t.start_time.day == required_day and t.start_time.hour >= required_hour)
+        condition = lambda t: t.start_time >= required_time
     elif constraint_type == "ends-before":
-        condition = lambda t: t.finish_time.day <= required_day or (t.finish_time.day == required_day and t.finish_time.hour <= required_hour)
+        condition = lambda t: t.finish_time <= required_time
     elif constraint_type == "ends-after":
-        condition = lambda t: t.finish_time.day >= required_day or (t.finish_time.day == required_day and t.finish_time.hour >= required_hour)
+        condition = lambda t: t.finish_time >= required_time
     else:
         exit("Invalid hard domain constraint (starts/ends before/after)")
     return Constraint(scope,condition)
@@ -203,10 +204,10 @@ def get_day_hour_to_day_hour_constraint(match):
     t = match.group("t")
     scope = (t,)
     constraint_type = match.group("type")
-    required_begin_day = match.group("start_day")
-    required_begin_hour = match.group("start_hour")
-    required_end_day = match.group("finish_day")
-    required_end_hour = match.group("finish_hour")
+    required_begin_day = days_in_week[match.group("start_day")]
+    required_begin_hour = hours_of_day[match.group("start_hour")]
+    required_end_day = days_in_week[match.group("finish_day")]
+    required_end_hour = hours_of_day[match.group("finish_hour")]
     if constraint_type == "starts-in":
         condition = lambda t: t.start_time.day >= required_begin_day and t.start_time.hour >= required_begin_hour \
                     and t.start_time.day <= required_end_day and t.start_time.hour <= required_end_hour
@@ -221,7 +222,7 @@ def get_range_hour_domain_constraint(match):
     t = match.group("t")
     scope = (t,)
     constraint_type = match.group("type")
-    required_hour = match.group("hour")
+    required_hour = hours_of_day[match.group("hour")]
     if constraint_type == "starts-before":
         condition = lambda t: t.start_time.hour <= required_hour
     elif constraint_type == "ends-before":

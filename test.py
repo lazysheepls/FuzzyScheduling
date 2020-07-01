@@ -152,8 +152,8 @@ def hard_endin_range(day1,time1,day2,time2):
 
 
 
-#filename = sys.argv[1]
-filename = 'input1.txt'
+filename = sys.argv[1]
+# filename = 'input1.txt'
 week_to_num = {'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5}
 time_to_num = {'9am': 1, '10am': 2, '11am':3, '12pm': 4, '1pm': 5, '2pm': 6, '3pm': 7, '4pm': 8, '5pm':9}
 domain =set()
