@@ -12,7 +12,7 @@ class Displayable(object):
     """Class that uses 'display'.
     The amount of detail is controlled by max_display_level
     """
-    max_display_level = 99   # can be overridden in subclasses
+    max_display_level = 0   # can be overridden in subclasses
 
     def display(self,level,*args,**nargs):
         """print the arguments if level is less than or equal to the

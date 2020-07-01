@@ -8,15 +8,10 @@ from cspConsistency import Search_with_AC_from_CSP
 
 # read input file
 file_name = argv[1]
-# file_name = "input1.txt"
 
 # Numeric representation in hours
-#DEBUG: use this after finish
 days_in_week = {"mon":1, "tue":2, "wed":3, "thu":4, "fri":5}
 hours_of_day = {"9am":9, "10am":10, "11am":11, "12pm":12, "1pm":13, "2pm":14, "3pm":15, "4pm":16, "5pm":17}
-#DEBUG: The following is just for testing, use above values when it's done
-# days_in_week = {'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5}
-# hours_of_day = {'9am': 1, '10am': 2, '11am':3, '12pm': 4, '1pm': 5, '2pm': 6, '3pm': 7, '4pm': 8, '5pm':9}
     
 
 def main():
@@ -42,28 +37,6 @@ def main():
         print("cost:" + str(problem.heuristic(result)))
     else:
         print("No solution")
-
-
-    # print("==> searcher <==")
-    # print(result)
-    # print("==> CSP: variables <==")
-    # print(csp.variables)
-    # print("==> CSP: domains <==")
-    # print(csp.domains)
-    # print("==> CSP: constraints <==")
-    # print(csp.constraints)
-
-    # print(lines)
-    
-    # print("Domains:")
-    # for d in domain:
-    #     print(d)
-    #     for time in domain[d]:
-    #         print("start-time:\t", time[0].day, "\t", time[0].hour, "\tfinish-time:\t", time[1].day, "\t", time[1].hour)
-
-    print("Soft constraints:")
-    for task in soft_constraints:
-        print(task, soft_constraints[task][0], soft_constraints[task][1])
 
 def read_file_to_lines(file_name):
     with open(file_name) as fp: 
@@ -99,14 +72,6 @@ def get_hard_constraints_from_lines(lines):
     binary_constraints = get_binary_constraints_from_lines(lines)
     domain_constaints = get_domain_constraints_from_lines(lines)
     hard_domain_constrains = binary_constraints + domain_constaints  
-    #DEBUG:
-    print("Binary Constraints:")
-    for bc in binary_constraints:
-        print(bc.scope[0], bc.scope[1], getsource(bc.condition))
-    print("Domain Constraints:")
-    for dc in domain_constaints:
-        print(dc.scope[0], getsource(dc.condition))
-    
     return hard_domain_constrains
 
 def get_binary_constraints_from_lines(lines):
@@ -266,9 +231,6 @@ class Extended_Search_With_AC_from_CSP(Search_with_AC_from_CSP):
         self.soft_constraints = csp.soft_constraints
     
     def heuristic(self, tasks):
-        #DEBUG:
-        print("==> Node N <==")
-        print(tasks)
         # sample format of n
         # {'t1': {(14, 17), (16, 19), (11, 14)}, 't2': {(13, 17), (15, 19), (11, 15), (14, 18), (12, 16)}}
         cost_for_all_tasks = 0
