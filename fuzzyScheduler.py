@@ -205,16 +205,20 @@ def get_day_hour_to_day_hour_constraint(match):
     t = match.group("t")
     scope = (t,)
     constraint_type = match.group("type")
+    # required begin time
     required_begin_day = days_in_week[match.group("start_day")]
     required_begin_hour = hours_of_day[match.group("start_hour")]
+    required_begin_time = Time(required_begin_day,required_begin_hour)
+
+    # required end time
     required_end_day = days_in_week[match.group("finish_day")]
     required_end_hour = hours_of_day[match.group("finish_hour")]
+    required_end_time = Time(required_end_day,required_end_hour)
+
     if constraint_type == "starts-in":
-        condition = lambda t: t.start_time.day >= required_begin_day and t.start_time.hour >= required_begin_hour \
-                    and t.start_time.day <= required_end_day and t.start_time.hour <= required_end_hour
+        condition = lambda t: t.start_time >= required_begin_time and t.start_time <= required_end_time
     elif constraint_type == "ends-in":
-        condition = lambda t: t.finish_time.day >= required_begin_day and t.finish_time.hour >= required_begin_hour \
-                    and t.finish_time.day <= required_end_day and t.finish_time.hour <= required_end_hour
+        condition = lambda t: t.finish_time >= required_begin_time and t.finish_time <= required_end_time
     else:
         exit("Invalid hard domain constraint (from day-hour to day-hour)")
     return Constraint(scope,condition)
