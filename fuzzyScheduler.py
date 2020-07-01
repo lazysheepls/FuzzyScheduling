@@ -341,13 +341,13 @@ class Time:
         return self.day > other.day or (self.day == other.day and self.hour > other.hour)
     
     def __ge__(self, other):
-        return self.day >= other.day or (self.day == other.day and self.hour >= other.hour)
+        return self.day > other.day or (self.day == other.day and self.hour >= other.hour)
     
     def __lt__(self, other):
         return self.day < other.day or (self.day == other.day and self.hour < other.hour)
     
     def __le__(self, other):
-        return self.day <= other.day or (self.day == other.day and self.hour <= other.hour)
+        return self.day < other.day or (self.day == other.day and self.hour <= other.hour)
 
 if __name__ == '__main__':
     main()         
